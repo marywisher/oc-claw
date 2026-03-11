@@ -523,6 +523,14 @@ export type ToolsConfig = {
         timeoutSeconds?: number;
       };
     };
+    /** Domain allowlist for web access (fetch and search). */
+    allowlist?: string[];
+    /** Require user confirmation for non-allowlisted domains (default: true). */
+    requireConfirmation?: boolean;
+    /** Dangerous domains to block (e.g., known phishing sites). */
+    dangerousDomains?: string[];
+    /** UI style for confirmation prompts ("modal" | "inline" | "log"). */
+    confirmationUI?: "modal" | "inline" | "log";
   };
   media?: MediaToolsConfig;
   links?: LinkToolsConfig;

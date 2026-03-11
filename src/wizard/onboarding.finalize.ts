@@ -552,10 +552,53 @@ export async function finalizeOnboardingWizard(
     }
   }
 
+  // Auto-create "assistant" agent if not already configured
+  try {
+    const agentList = nextConfig.agents?.list ?? [];
+    const assistantExists = agentList.some(
+      (agent) =>
+        typeof agent?.id === "string" && agent.id.trim().toLowerCase() === "assistant",
+    );
+
+    if (!assistantExists) {
+      // Add default assistant agent entry to config
+      if (!nextConfig.agents) {
+        nextConfig.agents = {};
+      }
+      if (!Array.isArray(nextConfig.agents.list)) {
+        nextConfig.agents.list = [];
+      }
+
+      nextConfig.agents.list.push({
+        id: "assistant",
+        name: "Assistant",
+        workspace: options.workspaceDir,
+      });
+
+      // Create agent's local memory file
+      const { ensureAgentLocalMemory } = await import("../agents/workspace.js");
+      const memoryResult = await ensureAgentLocalMemory({
+        workspaceDir: options.workspaceDir,
+        agentId: "assistant",
+      });
+
+      // Update config with the newly created agent
+      await (await import("../config/config.js")).writeConfigFile(nextConfig);
+
+      runtime.log("Created default 'assistant' agent with local memory at " + memoryResult.memoryPath);
+    }
+  } catch (error) {
+    // Log but don't fail onboarding if assistant agent creation fails
+    const message =
+      error instanceof Error ? error.message : String(error);
+    runtime.log(`Warning: Could not auto-create assistant agent: ${message}`);
+  }
+
   await prompter.note(
     'What now: https://openclaw.ai/showcase ("What People Are Building").',
     "What now",
   );
+
 
   await prompter.outro(
     controlUiOpened

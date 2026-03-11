@@ -284,6 +284,27 @@ export type AgentDefaultsConfig = {
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
+  /**
+   * Safe mode: when enabled, restricts agent capabilities to core chat functions only.
+   * Automatically disables: external command execution, plugin access, high-risk tools,
+   * file system outside workspace. Always allows: images, HTML/JS, public web read (with allowlist).
+   */
+  safeMode?: boolean;
+  /**
+   * Keyword-based message routing. Routes messages starting with @keyword to specified agent.
+   * Example: @assistant → assistant agent, @feedback → feedback agent.
+   */
+  routing?: {
+    /** List of keyword patterns for message routing (e.g., "@assistant", "@feedback"). */
+    keywords?: Array<{
+      /** Pattern to match (typically @keyword or keyword). Prefix "/" for regex. */
+      pattern: string;
+      /** Agent ID to route matching messages to. */
+      agentId: string;
+    }>;
+    /** Default agent ID when no keyword matches (default: "assistant"). */
+    defaultAgentId?: string;
+  };
 };
 
 export type AgentCompactionMode = "default" | "safeguard";

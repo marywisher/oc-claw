@@ -190,6 +190,23 @@ export const AgentDefaultsSchema = z
       .strict()
       .optional(),
     sandbox: AgentSandboxSchema,
+    safeMode: z.boolean().optional(),
+    routing: z
+      .object({
+        keywords: z
+          .array(
+            z
+              .object({
+                pattern: z.string().min(1),
+                agentId: z.string().min(1),
+              })
+              .strict(),
+          )
+          .optional(),
+        defaultAgentId: z.string().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .optional();

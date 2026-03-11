@@ -14,6 +14,66 @@ function normalizeBindingChannelId(raw?: string | null): string | null {
   return fallback || null;
 }
 
+/**
+ * Extract keyword from message start (e.g., "@assistant" from "@assistant hello").
+ * Returns the keyword (without leading @) or null if no keyword found.
+ */
+export function extractKeywordFromMessage(message: string): string | null {
+  const trimmed = message.trim();
+  if (!trimmed.startsWith("@")) {
+    return null;
+  }
+  const match = trimmed.match(/^@(\w+)/);
+  if (!match || !match[1]) {
+    return null;
+  }
+  return match[1];
+}
+
+/**
+ * Route message to agent based on keyword prefix.
+ * If message starts with @keyword, routes to agent mapped to that keyword.
+ * Falls back to default agent (usually "assistant") otherwise.
+ */
+export function resolveAgentByKeywordRoute(
+  cfg: OpenClawConfig,
+  message: string,
+): string {
+  const keyword = extractKeywordFromMessage(message);
+  if (!keyword) {
+    // No keyword; return configured default or hardcoded "assistant"
+    return normalizeAgentId(cfg.agents?.defaults?.routing?.defaultAgentId ?? "assistant");
+  }
+
+  // Search for matching keyword pattern in routing config
+  const keywords = cfg.agents?.defaults?.routing?.keywords ?? [];
+  for (const kw of keywords) {
+    const pattern = kw.pattern.trim();
+    let isMatch = false;
+
+    // Support regex patterns (prefix with "/")
+    if (pattern.startsWith("/")) {
+      try {
+        const regexPattern = pattern.slice(1);
+        const regex = new RegExp(`^${regexPattern}$`);
+        isMatch = regex.test(keyword);
+      } catch {
+        // Invalid regex; skip
+      }
+    } else {
+      // Exact string match (case-insensitive)
+      isMatch = pattern.toLowerCase() === keyword.toLowerCase();
+    }
+
+    if (isMatch) {
+      return normalizeAgentId(kw.agentId);
+    }
+  }
+
+  // No matching keyword; return default
+  return normalizeAgentId(cfg.agents?.defaults?.routing?.defaultAgentId ?? "assistant");
+}
+
 export function listBindings(cfg: OpenClawConfig): AgentRouteBinding[] {
   return listRouteBindings(cfg);
 }

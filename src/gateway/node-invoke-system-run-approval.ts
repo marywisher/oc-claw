@@ -99,7 +99,7 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
   nowMs?: number;
 }):
   | { ok: true; params: unknown }
-  | { ok: false; message: string; details?: Record<string, unknown> } {
+  | { ok: false; message: string; details?: Record<string, unknown>; userMessage?: string; rejectionReason?: "SOUL_CHECK" | "CODE_CHECK" | "SAFE_MODE" | "APPROVAL" } {
   const obj = asRecord(opts.rawParams);
   if (!obj) {
     return { ok: true, params: opts.rawParams };
@@ -134,6 +134,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
     return systemRunApprovalGuardError({
       code: "MISSING_RUN_ID",
       message: "approval override requires params.runId",
+      userMessage: "Your request requires approval. Please try again.",
+      rejectionReason: "APPROVAL",
     });
   }
 
@@ -142,6 +144,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
     return systemRunApprovalGuardError({
       code: "APPROVALS_UNAVAILABLE",
       message: "exec approvals unavailable",
+      userMessage: "Approval system is temporarily unavailable. Please try again.",
+      rejectionReason: "APPROVAL",
     });
   }
 
@@ -151,6 +155,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
       code: "UNKNOWN_APPROVAL_ID",
       message: "unknown or expired approval id",
       details: { runId },
+      userMessage: "This approval is no longer valid. Please request a new confirmation.",
+      rejectionReason: "APPROVAL",
     });
   }
 
@@ -160,6 +166,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
       code: "APPROVAL_EXPIRED",
       message: "approval expired",
       details: { runId },
+      userMessage: "Your approval has timed out. Please request new confirmation.",
+      rejectionReason: "APPROVAL",
     });
   }
 
@@ -177,6 +185,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
       code: "APPROVAL_NODE_BINDING_MISSING",
       message: "approval id missing node binding",
       details: { runId },
+      userMessage: "Permission denied: this action isn't allowed in your setup.",
+      rejectionReason: "CODE_CHECK",
     });
   }
   if (approvalNodeId !== targetNodeId) {
@@ -184,6 +194,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
       code: "APPROVAL_NODE_MISMATCH",
       message: "approval id not valid for this node",
       details: { runId },
+      userMessage: "Permission denied: this action isn't allowed in your setup.",
+      rejectionReason: "CODE_CHECK",
     });
   }
 
@@ -197,6 +209,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
         code: "APPROVAL_DEVICE_MISMATCH",
         message: "approval id not valid for this device",
         details: { runId },
+        userMessage: "This approval is not valid for your current device.",
+        rejectionReason: "CODE_CHECK",
       });
     }
   } else if (
@@ -207,6 +221,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
       code: "APPROVAL_CLIENT_MISMATCH",
       message: "approval id not valid for this client",
       details: { runId },
+      userMessage: "This approval is not valid for your current connection.",
+      rejectionReason: "CODE_CHECK",
     });
   }
 
@@ -223,6 +239,8 @@ export function sanitizeSystemRunParamsForForwarding(opts: {
       ok: false,
       message: runtimeContext.message,
       details: runtimeContext.details,
+      userMessage: "This action is not permitted in your setup.",
+      rejectionReason: "CODE_CHECK",
     };
   }
   if (runtimeContext.plan) {
